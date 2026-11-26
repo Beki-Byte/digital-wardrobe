@@ -5,6 +5,7 @@ name: Deploy auf GitHub Pages
 #   /            → App
 #   /start/      → 3D-Startseite
 #   /neu/        → neue App zum Ausprobieren (Branch app-neu)
+#   /y2k/        → Y2K-Design zum Ausprobieren (Branch y2k)
 on:
   push:
     branches: [main]
@@ -62,6 +63,22 @@ jobs:
           npm run build
           mkdir -p ../dist/neu
           cp -r dist/. ../dist/neu/
+
+      - name: Y2K-Version auschecken (Branch y2k)
+        id: y2k
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: y2k
+          path: _y2k
+      - name: Y2K-Version bauen
+        if: steps.y2k.outcome == 'success'
+        working-directory: _y2k
+        run: |
+          npm ci
+          npm run build
+          mkdir -p ../dist/y2k
+          cp -r dist/. ../dist/y2k/
 
       - uses: actions/upload-pages-artifact@v3
         with:

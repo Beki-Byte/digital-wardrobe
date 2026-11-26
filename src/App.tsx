@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useStore } from './store'
 import { Today } from './pages/Today'
@@ -7,6 +7,7 @@ import { AddItem } from './pages/AddItem'
 import { Outfits } from './pages/Outfits'
 import { SettingsPage } from './pages/SettingsPage'
 import { Icon, type IconName } from './components/Icon'
+import { Intro } from './components/Intro'
 
 type Tab = 'heute' | 'schrank' | 'neu' | 'outfits' | 'einstellungen'
 
@@ -22,6 +23,7 @@ const tabs: { id: Tab; icon: IconName; label: string }[] = [
 export default function App() {
   const { ready } = useStore()
   const [intro, setIntro] = useState(true)
+  const [revealed, setRevealed] = useState(false)
   const origin = useRef({ x: innerWidth / 2, y: innerHeight })
   const [tab, setTab] = useState<Tab>(() => (location.hash.slice(1) as Tab) || 'heute')
 
@@ -29,6 +31,8 @@ export default function App() {
     history.replaceState(null, '', `#${tab}`)
   }, [tab])
 
+
+  const reveal = useCallback(() => setRevealed(true), [])
 
   const go = (t: Tab, e?: React.MouseEvent) => {
     if (t === tab) return
@@ -46,9 +50,9 @@ export default function App() {
 
   return (
     <>
-      {intro && <Intro ready={ready} onDone={() => setIntro(false)} />}
+      {intro && <Intro ready={ready} onReveal={reveal} onDone={() => setIntro(false)} />}
       {ready && (
-    <div className="app">
+    <div className={`app ${revealed ? 'revealed' : 'hidden-under'}`}>
       <main className="view">
         {tab === 'heute' && <Today goAdd={() => go('neu')} />}
         {tab === 'schrank' && <Wardrobe goAdd={() => go('neu')} />}
@@ -77,21 +81,3 @@ export default function App() {
   )
 }
 
-/** Kurzer Vorspann beim Start: Wortmarke, dann Vorhang auf */
-function Intro({ ready, onDone }: { ready: boolean; onDone: () => void }) {
-  const [leaving, setLeaving] = useState(false)
-  useEffect(() => {
-    if (!ready) return
-    const t = setTimeout(() => setLeaving(true), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900)
-    return () => clearTimeout(t)
-  }, [ready])
-  return (
-    <div className={`intro ${leaving ? 'out' : ''}`} onAnimationEnd={(e) => e.animationName === 'curtain' && onDone()} aria-hidden="true">
-      <span className="intro-word">
-        {'Kleiderschrank'.split('').map((c, i) => (
-          <span key={i} style={{ animationDelay: `${i * 35}ms` }}>{c}</span>
-        ))}
-      </span>
-    </div>
-  )
-}

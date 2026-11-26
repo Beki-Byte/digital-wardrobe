@@ -4,7 +4,7 @@ import { ItemForm } from '../components/ItemForm'
 import { ItemImage } from '../components/ItemImage'
 import { Icon } from '../components/Icon'
 import { categoryLabels, warmthLabels } from '../labels'
-import { reducedMotion, tier } from '../lib/quality'
+import { tier } from '../lib/quality'
 import { useStore } from '../store'
 import type { Category, Item } from '../types'
 import type { WardrobeState } from '../webgl/WardrobeScene'
@@ -123,71 +123,48 @@ function Wardrobe3D({
   onEdit: (i: Item) => void
   goAdd: () => void
 }) {
-  const st = useMemo<WardrobeState>(() => ({ open: 0, dolly: 0, scroll: 0, target: 0, max: 0 }), [])
-  const tl = useRef<gsap.core.Timeline | null>(null)
-  const [opened, setOpened] = useState(reducedMotion)
+  const st = useMemo<WardrobeState>(() => ({ left: 0, right: 0, light: 0, scroll: 0, target: 0, max: 0 }), [])
+  const [open, setOpen] = useState(false)
+  const [touched, setTouched] = useState(false)
   const [selected, setSelected] = useState<Item | null>(null)
   const dragged = useRef(false)
   const drag = useRef<{ x: number; t: number; start: number } | null>(null)
-
-  // Jedes Mal beim Reingehen: Türen auf, Licht an, Kamera fährt ran –
-  // aber erst, wenn der Schrank wirklich gezeichnet ist
-  const [ready, setReady] = useState(false)
-  useEffect(() => {
-    if (reducedMotion) {
-      st.open = 1
-      st.dolly = 1
-      return
-    }
-    if (!ready) return
-    tl.current = gsap
-      .timeline({ delay: 0.35, onComplete: () => setOpened(true) })
-      .to(st, { open: 1, duration: 1.6, ease: 'power3.inOut' })
-      .to(st, { dolly: 1, duration: 1.1, ease: 'power3.inOut' }, '-=0.6')
-    return () => {
-      tl.current?.kill()
-    }
-  }, [st, ready])
 
   // Filter gewechselt → zurück an den Anfang
   useEffect(() => {
     st.target = 0
   }, [items, st])
 
-  const skip = () => {
-    if (!opened) tl.current?.progress(1)
+  const close = () => {
+    setSelected(null)
+    gsap.to(st, { left: 0, right: 0, duration: 0.8, ease: 'power2.in' })
   }
 
+  // Bügel durchschieben (nur wenn offen und nicht gerade eine Tür gezogen wird)
   const onDown = (e: React.PointerEvent) => {
-    skip()
+    setTouched(true)
+    if (!open || dragged.current) return
     drag.current = { x: e.clientX, t: st.target, start: e.clientX }
-    dragged.current = false
   }
   const onMove = (e: React.PointerEvent) => {
     if (!drag.current) return
     const dx = e.clientX - drag.current.x
     if (Math.abs(e.clientX - drag.current.start) > 8) dragged.current = true
-    const k = 3.2 / Math.max(320, (e.currentTarget as HTMLElement).clientWidth)
+    const k = 2.6 / Math.max(320, (e.currentTarget as HTMLElement).clientWidth)
     st.target = Math.min(st.max, Math.max(0, drag.current.t - dx * k))
   }
   const onUp = () => {
+    if (!drag.current) return
     drag.current = null
     setTimeout(() => (dragged.current = false), 0)
   }
   const onWheel = (e: React.WheelEvent) => {
-    st.target = Math.min(st.max, Math.max(0, st.target + (e.deltaX || e.deltaY) * 0.004))
+    if (open) st.target = Math.min(st.max, Math.max(0, st.target + (e.deltaX || e.deltaY) * 0.004))
   }
 
   return (
-    <div className="wardrobe3d">
-      <div
-        className="stage3d"
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerCancel={onUp}
-        onWheel={onWheel}
-      >
+    <div className={`wardrobe3d ${open ? 'is-open' : ''}`}>
+      <div className="stage3d" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onWheel={onWheel}>
         <div className="stage-glow" />
         <Suspense fallback={<div className="stage-loading" />}>
           <WardrobeCanvas
@@ -196,30 +173,36 @@ function Wardrobe3D({
             selected={selected?.id ?? null}
             onTap={(i) => setSelected((cur) => (i && cur?.id === i.id ? null : i))}
             dragged={dragged}
-            onReady={() => setReady(true)}
+            onDoorsChange={(o) => {
+              setOpen(o)
+              if (!o) setSelected(null)
+            }}
           />
         </Suspense>
       </div>
 
-      <header className={`w3d-head ${opened ? 'in' : ''}`}>
+      <header className="w3d-head in">
         <div>
           <p className="eyebrow">{total} {total === 1 ? 'Teil' : 'Teile'}</p>
           <h1 className="display">Mein Schrank</h1>
         </div>
         {toggle}
       </header>
-      <div className={`w3d-filters ${opened ? 'in' : ''}`}>{filters}</div>
+      <div className={`w3d-filters ${open ? 'in' : ''}`}>{filters}</div>
 
-      {!opened && <p className="w3d-skip">Tippen zum Öffnen</p>}
+      {!open && <p className={`w3d-skip ${touched ? 'quiet' : ''}`}>Zieh die Türen auf – oder tipp sie an</p>}
 
-      {opened && total === 0 && (
+      {open && total === 0 && (
         <div className="w3d-empty">
-          <p>Dein Schrank ist noch leer.</p>
+          <p>Noch leer hier drin.</p>
           <button className="btn primary" onClick={goAdd}><Icon name="camera" size={18} /> Erstes Teil scannen</button>
         </div>
       )}
-      {opened && total > 0 && !selected && (
-        <p className="w3d-hint">{st.max > 0 ? 'Wischen zum Durchschieben, antippen für Details' : 'Teil antippen für Details'}</p>
+      {open && total > 0 && !selected && (
+        <div className="w3d-bottom">
+          <p className="w3d-hint">{st.max > 0 ? 'Wischen zum Durchschieben, antippen für Details' : 'Teil antippen für Details'}</p>
+          <button className="btn small ghost-pill" onClick={close}>Schrank schließen</button>
+        </div>
       )}
 
       {selected && (

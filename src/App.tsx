@@ -55,7 +55,7 @@ export default function App() {
     <div className={`app ${revealed ? 'revealed' : 'hidden-under'}`}>
       <main className="view">
         {tab === 'heute' && <Today goAdd={() => go('neu')} />}
-        {tab === 'schrank' && <Wardrobe goAdd={() => go('neu')} />}
+        {tab === 'schrank' && <Wardrobe goAdd={() => go('neu')} goToday={() => go('heute')} />}
         {tab === 'neu' && <AddItem goWardrobe={() => go('schrank')} />}
         {tab === 'outfits' && <Outfits />}
         {tab === 'einstellungen' && <SettingsPage />}

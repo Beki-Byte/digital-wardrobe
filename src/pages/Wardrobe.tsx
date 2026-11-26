@@ -14,7 +14,7 @@ const WardrobeCanvas = lazy(() => import('../webgl/WardrobeScene'))
 const VIEW_KEY = 'kleiderschrank:ansicht'
 const JEWELRY: Category[] = ['ring', 'armband', 'kette', 'guertel']
 
-export function Wardrobe({ goAdd }: { goAdd: () => void }) {
+export function Wardrobe({ goAdd, goToday }: { goAdd: () => void; goToday: () => void }) {
   const { items, settings } = useStore()
   const [filter, setFilter] = useState<Category | 'alle'>('alle')
   const [edit, setEdit] = useState<Item | null>(null)
@@ -39,6 +39,7 @@ export function Wardrobe({ goAdd }: { goAdd: () => void }) {
     () => items.filter((i) => (filter === 'alle' ? i.category !== 'hijab' || settings.hijab : i.category === filter)),
     [items, filter, settings.hijab],
   )
+  const canSuggest = items.some((i) => i.category === 'kleid') || (items.some((i) => i.category === 'oberteil') && items.some((i) => i.category === 'unterteil'))
   const cats = (Object.keys(categoryLabels) as Category[]).filter(
     (c) => items.some((i) => i.category === c) && (c !== 'hijab' || settings.hijab),
   )
@@ -76,7 +77,7 @@ export function Wardrobe({ goAdd }: { goAdd: () => void }) {
     ) : null
 
   if (view === '3d')
-    return <Wardrobe3D items={visible} total={items.length} filters={filters} toggle={toggle} onEdit={setEdit} goAdd={goAdd} />
+    return <Wardrobe3D items={visible} total={items.length} filters={filters} toggle={toggle} onEdit={setEdit} goAdd={goAdd} goToday={goToday} canSuggest={canSuggest} />
 
   return (
     <div className="page">
@@ -114,7 +115,7 @@ export function Wardrobe({ goAdd }: { goAdd: () => void }) {
 /* ---------- 3D-Ansicht ---------- */
 
 function Wardrobe3D({
-  items, total, filters, toggle, onEdit, goAdd,
+  items, total, filters, toggle, onEdit, goAdd, goToday, canSuggest,
 }: {
   items: Item[]
   total: number
@@ -122,6 +123,8 @@ function Wardrobe3D({
   toggle: React.ReactNode
   onEdit: (i: Item) => void
   goAdd: () => void
+  goToday: () => void
+  canSuggest: boolean
 }) {
   const st = useMemo<WardrobeState>(() => ({ left: 0, right: 0, light: 0, scroll: 0, target: 0, max: 0 }), [])
   const [open, setOpen] = useState(false)
@@ -201,7 +204,12 @@ function Wardrobe3D({
       {open && total > 0 && !selected && (
         <div className="w3d-bottom">
           <p className="w3d-hint">{st.max > 0 ? 'Wischen zum Durchschieben, antippen für Details' : 'Teil antippen für Details'}</p>
-          <button className="btn small ghost-pill" onClick={close}>Schrank schließen</button>
+          <div className="row gap">
+            {canSuggest && (
+              <button className="btn small primary w3d-today" onClick={goToday}><Icon name="sparkle" size={16} /> Mein Look für heute</button>
+            )}
+            <button className="btn small ghost-pill" onClick={close}>Schließen</button>
+          </div>
         </div>
       )}
 

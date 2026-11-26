@@ -25,19 +25,20 @@ export interface WardrobeState {
 
 export const OPEN = 1.95
 
-// Bildmaße des offenen Schranks (Pixel) → Welt
-const IMG_W = 988, IMG_H = 1591
+// Bildmaße des Schrank-Fotos (Pixel) → Welt
+const IMG_W = 621, IMG_H = 1000
 const WH = 4 // Welthöhe
 const S = WH / IMG_H
 const px = (x: number) => (x - IMG_W / 2) * S
 const py = (y: number) => (IMG_H / 2 - y) * S
 
 // Öffnung / Innenraum (aus dem Foto ausgemessen)
-const HINGE_L = px(152), HINGE_R = px(836)
-const DOOR_TOP = py(232), DOOR_BOTTOM = py(1398)
-const IN_X0 = px(185), IN_X1 = px(805)
-const RAIL_Y = py(372)
-const FLOOR_Y = py(1290)
+const HINGE_L = px(80), HINGE_R = px(542)
+const DOOR_TOP = py(160), DOOR_BOTTOM = py(854)
+const IN_X0 = px(100), IN_X1 = px(522)
+const RAIL_Y = py(245)
+const FLOOR_Y = py(818)
+const GROUND_Y = py(968) // Unterkante der Füße
 const IW = (IN_X1 - IN_X0) / 2
 
 const HANG: Category[] = ['jacke', 'kleid', 'oberteil', 'unterteil', 'hijab']
@@ -208,16 +209,16 @@ function Cabinet({ st }: { st: WardrobeState }) {
   const inMat = useRef<THREE.MeshBasicMaterial>(null)
   const glow = useRef<THREE.MeshBasicMaterial>(null)
   const depth = 0.55
-  const ix0 = px(150), ix1 = px(840), iy0 = py(240), iy1 = py(1370)
+  const ix0 = px(80), ix1 = px(542), iy0 = py(160), iy1 = py(856)
   useFrame(() => {
     inMat.current?.color.setScalar(0.32 + st.light * 0.68)
     if (glow.current) glow.current.opacity = st.light * 0.55
   })
   return (
     <>
-      <mesh position={[(ix0 + ix1) / 2, (iy0 + iy1) / 2, -depth]} scale={1.12}>
+      <mesh position={[(ix0 + ix1) / 2, (iy0 + iy1) / 2, -depth]} scale={1.07}>
         <planeGeometry args={[ix1 - ix0, iy0 - iy1]} />
-        <meshBasicMaterial ref={inMat} map={inside} />
+        <meshBasicMaterial ref={inMat} map={inside} transparent alphaTest={0.3} />
       </mesh>
       <mesh position={[0, RAIL_Y + 0.25, -depth + 0.02]}>
         <planeGeometry args={[IW * 2.2, 1.6]} />
@@ -231,7 +232,49 @@ function Cabinet({ st }: { st: WardrobeState }) {
         <planeGeometry args={[IMG_W * S, IMG_H * S]} />
         <meshBasicMaterial map={body} transparent alphaTest={0.35} />
       </mesh>
+      <Floor />
     </>
+  )
+}
+
+/** Boden mit weichem Schatten unter dem Schrank – damit nichts schwebt */
+function floorTexture() {
+  const c = document.createElement('canvas')
+  c.width = 512
+  c.height = 512
+  const x = c.getContext('2d')!
+  // Boden: zur Mitte hin vom Licht leicht aufgehellt
+  const g = x.createRadialGradient(256, 200, 10, 256, 220, 300)
+  g.addColorStop(0, 'rgba(120,88,64,1)')
+  g.addColorStop(0.55, 'rgba(58,40,29,1)')
+  g.addColorStop(1, 'rgba(28,19,14,0)')
+  x.fillStyle = g
+  x.fillRect(0, 0, 512, 512)
+  // Kontaktschatten unter dem Schrank
+  x.save()
+  x.translate(256, 196)
+  x.scale(1, 0.32)
+  const sh = x.createRadialGradient(0, 0, 8, 0, 0, 115)
+  sh.addColorStop(0, 'rgba(8,4,2,0.95)')
+  sh.addColorStop(0.6, 'rgba(8,4,2,0.55)')
+  sh.addColorStop(1, 'rgba(8,4,2,0)')
+  x.fillStyle = sh
+  x.beginPath()
+  x.arc(0, 0, 115, 0, Math.PI * 2)
+  x.fill()
+  x.restore()
+  const t = new THREE.CanvasTexture(c)
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+function Floor() {
+  const map = useMemo(floorTexture, [])
+  return (
+    <mesh position={[0, GROUND_Y, 0.9]} rotation={[-Math.PI / 2, 0, 0]}>
+      <planeGeometry args={[9, 9]} />
+      <meshBasicMaterial map={map} transparent depthWrite={false} />
+    </mesh>
   )
 }
 
@@ -246,12 +289,13 @@ function CameraRig({ st }: { st: WardrobeState }) {
     const aspect = size.width / size.height
     const tanH = Math.tan(THREE.MathUtils.degToRad(cam.fov / 2))
     const fit = (w: number, h: number) => Math.max(w / 2 / (tanH * aspect), h / 2 / tanH)
-    const z0 = fit(IMG_W * S * 1.08, WH * 1.06)
+    // Platz lassen für Titel oben und Leiste unten
+    const z0 = fit(IMG_W * S * 1.2, WH * 1.42)
     const z1 = fit((IN_X1 - IN_X0) * 1.25, (RAIL_Y - FLOOR_Y) * 1.35)
     const l = st.light
     st.scroll += (st.target - st.scroll) * 0.12
     par.current.lerp(pointer, 0.05)
-    const y = 0.25 * (1 - l) + ((RAIL_Y + FLOOR_Y) / 2) * l
+    const y = -0.05 * (1 - l) + ((RAIL_Y + FLOOR_Y) / 2 - 0.1) * l
     camera.position.set(par.current.x * 0.25, y + par.current.y * 0.12, z0 + (z1 - z0) * l)
     look.set(0, y, 0)
     camera.lookAt(look)

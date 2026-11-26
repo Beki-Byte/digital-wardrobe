@@ -347,7 +347,8 @@ input:not([type]):focus, input[type='text']:focus, select:focus { border-color: 
 @keyframes settle { from { transform: scale(1.04); } }
 .app.hidden-under { opacity: 0; }
 .app.revealed { animation: fade-in 1.1s var(--ease) both; }
-.app.revealed .page { animation: rise-in 1.2s var(--ease) both; }
+/* ohne fill-mode: eine "festgehaltene" transform-Animation würde fixe Hintergründe einsperren */
+.app.revealed .page { animation: rise-in 1.2s var(--ease); }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes rise-in { from { transform: translateY(28px); } }
 
@@ -450,3 +451,27 @@ input:not([type]):focus, input[type='text']:focus, select:focus { border-color: 
 }
 .look-tile .thumb { aspect-ratio: 3 / 4; }
 .look-tile-label { font-family: var(--serif); font-size: 1.15rem; padding: 0 6px 4px; }
+
+
+/* ---------- Tablet ---------- */
+@media (min-width: 700px) {
+  .app { max-width: 860px; }
+  .page { padding-left: 32px; padding-right: 32px; gap: 20px; }
+  .display { font-size: 3.4rem; }
+  .look-stage { grid-template-columns: 1fr 150px; padding: 28px 16px 22px; }
+  .piece.slot-hijab .piece-img { height: 140px; }
+  .piece.slot-unterschicht .piece-img { height: 160px; }
+  .piece.slot-oberteil .piece-img { height: 240px; }
+  .piece.slot-kleid .piece-img { height: 380px; }
+  .piece.slot-unterteil .piece-img { height: 250px; }
+  .piece.slot-unterteilDrunter .piece-img { height: 160px; }
+  .piece.slot-schuhe .piece-img { height: 110px; }
+  .piece.side .piece-img { height: 90px; }
+  .piece.side.slot-jacke .piece-img { height: 180px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .look-tile { flex-basis: 40vw; max-width: 380px; }
+  .tabbar { max-width: 640px; }
+  .sheet { max-width: 620px; }
+  .w3d-head, .w3d-filters { padding-left: 32px; padding-right: 32px; left: 0; right: 0; }
+}
+.w3d-today { margin-top: 2px; }

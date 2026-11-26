@@ -37,6 +37,7 @@ export function ItemForm({ existing, onDone }: Props) {
   const [processed, setProcessed] = useState<HTMLCanvasElement | null>(null)
   const [preview, setPreview] = useState<string | undefined>(existing ? blobUrl(existing.image) : undefined)
   const [busy, setBusy] = useState(false)
+  const [scanTick, setScanTick] = useState(0)
 
   const [category, setCategory] = useState<Category | undefined>(existing?.category)
   const [name, setName] = useState(existing?.name ?? '')
@@ -57,6 +58,7 @@ export function ItemForm({ existing, onDone }: Props) {
       const out = removeBg ? removeBackground(orig, tol) : orig
       setProcessed(out)
       setPreview(out.toDataURL('image/png'))
+      setScanTick((n) => n + 1)
       const hex = dominantColor(out)
       setColor(hex)
       setCName(colorName(hex))
@@ -112,7 +114,10 @@ export function ItemForm({ existing, onDone }: Props) {
       {/* Foto */}
       <div className="photo-box">
         {hasImage ? (
-          <img src={preview} alt="Vorschau" className="photo-preview checker" />
+          <div className={`photo-frame ${scanTick ? 'scanning' : ''}`} key={scanTick}>
+            <img src={preview} alt="Vorschau" className="photo-preview" />
+            <span className="scanline" aria-hidden="true" />
+          </div>
         ) : (
           <div className="photo-empty">
             <div className="photo-empty-icon"><Icon name="camera" size={34} stroke={1.3} /></div>

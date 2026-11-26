@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { uid } from '../db'
 import { isAllowed, learn } from '../engine'
 import { ItemImage } from '../components/ItemImage'
@@ -89,16 +89,16 @@ export function Outfits() {
           </p>
         </section>
       ) : (
-        <div className="grid outfits-grid">
+        <Carousel>
           {list.map((o) => (
-            <button key={o.id} className="grid-item" onClick={() => setOpen(o)}>
+            <button key={o.id} className="look-tile" onClick={() => setOpen(o)}>
               <OutfitThumb parts={o.parts} items={items} />
-              <span className="grid-label">
+              <span className="look-tile-label">
                 {o.name || (o.wornDates.length ? `${o.wornDates.length}× getragen` : fmt(o.createdAt))}
               </span>
             </button>
           ))}
-        </div>
+        </Carousel>
       )}
     </div>
   )
@@ -169,6 +169,40 @@ function Builder({ onClose }: { onClose: () => void }) {
         </button>
       </div>
       {!valid && <p className="muted small">Mindestens Oberteil + Unterteil oder ein Kleid auswählen.</p>}
+    </div>
+  )
+}
+
+/** Wisch-Galerie: Karten neigen sich je nach Position (wie Kleiderbügel an der Stange) */
+function Carousel({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const mid = el.scrollLeft + el.clientWidth / 2
+      for (const c of Array.from(el.children) as HTMLElement[]) {
+        const d = (c.offsetLeft + c.offsetWidth / 2 - mid) / el.clientWidth
+        const k = Math.max(-1, Math.min(1, d))
+        c.style.transform = `perspective(900px) rotateY(${k * -28}deg) scale(${1 - Math.abs(k) * 0.12})`
+        c.style.opacity = String(1 - Math.abs(k) * 0.45)
+      }
+    }
+    const on = () => (raf ||= requestAnimationFrame(update))
+    update()
+    el.addEventListener('scroll', on, { passive: true })
+    window.addEventListener('resize', on)
+    return () => {
+      el.removeEventListener('scroll', on)
+      window.removeEventListener('resize', on)
+      cancelAnimationFrame(raf)
+    }
+  }, [children])
+  return (
+    <div className="carousel" ref={ref}>
+      {children}
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useStore } from './store'
 import { Today } from './pages/Today'
@@ -18,36 +18,23 @@ const tabs: { id: Tab; icon: IconName; label: string }[] = [
   { id: 'einstellungen', icon: 'settings', label: 'Mehr' },
 ]
 
-const INTRO_KEY = 'kleiderschrank:intro'
-// Adresse beim Start merken, bevor die App #heute setzt
-const startedWithHash = !!location.hash
 
 export default function App() {
-  const { ready, items } = useStore()
+  const { ready } = useStore()
+  const [intro, setIntro] = useState(true)
+  const origin = useRef({ x: innerWidth / 2, y: innerHeight })
   const [tab, setTab] = useState<Tab>(() => (location.hash.slice(1) as Tab) || 'heute')
 
   useEffect(() => {
     history.replaceState(null, '', `#${tab}`)
   }, [tab])
 
-  // Beim allerersten Besuch: zur Startseite mit dem Schrank (falls vorhanden)
-  useEffect(() => {
-    if (!ready || items.length) return
-    let seen = '1'
-    try {
-      seen = localStorage.getItem(INTRO_KEY) ?? ''
-      localStorage.setItem(INTRO_KEY, '1')
-    } catch {
-      /* privat-Modus */
-    }
-    if (seen || startedWithHash) return
-    fetch('./start/', { method: 'HEAD' })
-      .then((r) => r.ok && location.replace('./start/'))
-      .catch(() => {})
-  }, [ready, items.length])
 
-  const go = (t: Tab) => {
+  const go = (t: Tab, e?: React.MouseEvent) => {
     if (t === tab) return
+    if (e) origin.current = { x: e.clientX, y: e.clientY }
+    document.documentElement.style.setProperty('--vt-x', `${origin.current.x}px`)
+    document.documentElement.style.setProperty('--vt-y', `${origin.current.y}px`)
     const doc = document as Document & { startViewTransition?: (cb: () => void) => void }
     const run = () => {
       flushSync(() => setTab(t))
@@ -57,14 +44,10 @@ export default function App() {
     else run()
   }
 
-  if (!ready)
-    return (
-      <div className="loading">
-        <span className="loading-mark">K</span>
-      </div>
-    )
-
   return (
+    <>
+      {intro && <Intro ready={ready} onDone={() => setIntro(false)} />}
+      {ready && (
     <div className="app">
       <main className="view">
         {tab === 'heute' && <Today goAdd={() => go('neu')} />}
@@ -78,7 +61,7 @@ export default function App() {
           <button
             key={t.id}
             className={`${tab === t.id ? 'on' : ''} ${t.id === 'neu' ? 'fab' : ''}`}
-            onClick={() => go(t.id)}
+            onClick={(e) => go(t.id, e)}
             aria-current={tab === t.id ? 'page' : undefined}
           >
             <span className="tab-icon">
@@ -88,6 +71,27 @@ export default function App() {
           </button>
         ))}
       </nav>
+    </div>
+      )}
+    </>
+  )
+}
+
+/** Kurzer Vorspann beim Start: Wortmarke, dann Vorhang auf */
+function Intro({ ready, onDone }: { ready: boolean; onDone: () => void }) {
+  const [leaving, setLeaving] = useState(false)
+  useEffect(() => {
+    if (!ready) return
+    const t = setTimeout(() => setLeaving(true), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 900)
+    return () => clearTimeout(t)
+  }, [ready])
+  return (
+    <div className={`intro ${leaving ? 'out' : ''}`} onAnimationEnd={(e) => e.animationName === 'curtain' && onDone()} aria-hidden="true">
+      <span className="intro-word">
+        {'Kleiderschrank'.split('').map((c, i) => (
+          <span key={i} style={{ animationDelay: `${i * 35}ms` }}>{c}</span>
+        ))}
+      </span>
     </div>
   )
 }

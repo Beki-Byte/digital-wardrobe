@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getMeta, setMeta, uid } from '../db'
 import {
   availableTemplates,
@@ -19,6 +19,12 @@ import { fetchWeather } from '../weather'
 import { LocationPicker } from '../components/LocationPicker'
 import { OutfitView } from '../components/OutfitView'
 import { Icon, weatherIcon } from '../components/Icon'
+import { tier } from '../lib/quality'
+
+const SkyCanvas = lazy(() => import('../webgl/SkyScene'))
+
+const isRain = (c: number) => (c >= 51 && c <= 67) || (c >= 80 && c <= 82) || c >= 95
+const isSnow = (c: number) => (c >= 71 && c <= 77) || c === 85 || c === 86
 
 const dateKey = (offset: number) => {
   const d = new Date(Date.now() + offset * 86400000)
@@ -162,8 +168,25 @@ export function Today({ goAdd }: { goAdd: () => void }) {
   const tips = weather && current ? weatherTips(current.parts, items, weather) : []
   const day = new Date(Date.now() + offset * 86400000).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'short' })
 
+  const skyStyle = weather
+    ? ({ '--sky-cold': `hsl(${210 - Math.max(-8, Math.min(30, weather.min)) * 4} 45% 45%)`, '--sky-warm': `hsl(${Math.max(8, 210 - Math.max(-8, Math.min(30, weather.max)) * 7)} 60% 50%)` } as React.CSSProperties)
+    : undefined
+
   return (
-    <div className="page">
+    <div className="page today">
+      <div className="sky-wrap" style={skyStyle} aria-hidden="true">
+        {tier !== 'low' && weather && (
+          <Suspense fallback={null}>
+            <SkyCanvas
+              min={weather.min}
+              max={weather.max}
+              rain={isRain(weather.code) || weather.rainProb >= 60 ? 1 : 0}
+              snow={isSnow(weather.code) ? 1 : 0}
+              cloud={weather.code >= 2 ? 0.9 : 0.35}
+            />
+          </Suspense>
+        )}
+      </div>
       <header className="hero-head">
         <div className="hero-top">
           <p className="eyebrow">{day}</p>

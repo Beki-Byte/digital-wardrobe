@@ -7,6 +7,7 @@ import { AddItem } from './pages/AddItem'
 import { Outfits } from './pages/Outfits'
 import { SettingsPage } from './pages/SettingsPage'
 import { Icon, type IconName } from './components/Icon'
+import { Y2KDecor } from './components/Y2KDecor'
 
 type Tab = 'heute' | 'schrank' | 'neu' | 'outfits' | 'einstellungen'
 
@@ -66,6 +67,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Y2KDecor />
       <main className="view">
         {tab === 'heute' && <Today goAdd={() => go('neu')} />}
         {tab === 'schrank' && <Wardrobe goAdd={() => go('neu')} />}

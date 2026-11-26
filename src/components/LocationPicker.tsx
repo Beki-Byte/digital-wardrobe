@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { currentPosition, searchCity } from '../weather'
+import { Icon } from './Icon'
 
 export function LocationPicker({ onDone }: { onDone?: () => void }) {
   const { settings, setSettings } = useStore()
@@ -35,12 +36,16 @@ export function LocationPicker({ onDone }: { onDone?: () => void }) {
 
   return (
     <div className="location">
-      <button className="btn" onClick={gps}>📍 Meinen Standort nutzen</button>
-      <form onSubmit={search} className="row gap">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="oder Stadt eingeben …" className="grow" />
-        <button className="btn" type="submit">Suchen</button>
+      <button className="btn" onClick={gps}>
+        <Icon name="pin" size={18} /> Meinen Standort nutzen
+      </button>
+      <form onSubmit={search} className="search">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="oder Stadt eingeben" aria-label="Stadt" />
+        <button className="btn icon-only" type="submit" aria-label="Suchen">
+          <Icon name="arrow" size={18} />
+        </button>
       </form>
-      {msg && <p className="muted">{msg}</p>}
+      {msg && <p className="muted small">{msg}</p>}
       {res.map((r) => (
         <button
           key={`${r.lat},${r.lon}`}
@@ -52,7 +57,7 @@ export function LocationPicker({ onDone }: { onDone?: () => void }) {
             onDone?.()
           }}
         >
-          {r.name}
+          <Icon name="pin" size={16} /> {r.name}
         </button>
       ))}
     </div>

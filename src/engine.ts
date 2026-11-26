@@ -449,7 +449,7 @@ export function weatherTips(p: OutfitParts, items: Item[], w: DayWeather): strin
   } else if (need(w.min) > W + 1.5) {
     tips.push(`Morgens wird es mit ${w.min}° frisch – nimm dir etwas zum Drüberziehen mit.`)
   }
-  if (w.rain) tips.push(`Regenwahrscheinlichkeit ${w.rainProb} % – ${j?.waterproof ? 'die Jacke ist wasserfest 👍' : 'denk an einen Schirm ☂️'}`)
+  if (w.rain) tips.push(`Regenwahrscheinlichkeit ${w.rainProb} % – ${j?.waterproof ? 'die Jacke ist wasserfest.' : 'denk an einen Schirm.'}`)
   if (p.unterschicht && spread >= 6) tips.push('Zwiebellook: Wenn es warm wird, kannst du eine Schicht ausziehen.')
   return tips
 }

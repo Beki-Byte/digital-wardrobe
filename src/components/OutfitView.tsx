@@ -1,9 +1,26 @@
-import { categoryIcons, slotLabels } from '../labels'
+import { outfitKey } from '../engine'
+import { slotLabels } from '../labels'
 import type { Item, OutfitParts, Settings, Slot } from '../types'
+import { Icon, type IconName } from './Icon'
 import { ItemImage } from './ItemImage'
 
 const MAIN_ORDER: Slot[] = ['hijab', 'unterschicht', 'oberteil', 'kleid', 'unterteil', 'unterteilDrunter', 'schuhe']
 const SIDE_ORDER: Slot[] = ['jacke', 'kette', 'armband', 'ring', 'guertel']
+
+const slotIcon: Record<Slot, IconName> = {
+  unterschicht: 'drunter',
+  oberteil: 'oberteil',
+  kleid: 'kleid',
+  unterteil: 'unterteil',
+  unterteilDrunter: 'leggings',
+  jacke: 'jacke',
+  schuhe: 'schuhe',
+  hijab: 'hijab',
+  ring: 'ring',
+  armband: 'armband',
+  kette: 'kette',
+  guertel: 'guertel',
+}
 
 interface Props {
   parts: OutfitParts
@@ -15,66 +32,74 @@ interface Props {
 
 export function OutfitView({ parts, items, settings, onReroll, onToggle }: Props) {
   const by = new Map(items.map((i) => [i.id, i]))
-  const cat = (c: Item['category']) => items.some((i) => i.category === c)
+  const has = (c: Item['category']) => items.some((i) => i.category === c)
   const bottom = parts.unterteil ? by.get(parts.unterteil) : undefined
 
-  const required = (s: Slot) =>
-    (s === 'oberteil' && !parts.kleid) || s === 'kleid' || (s === 'unterteil' && !parts.kleid)
+  const required = (s: Slot) => (s === 'oberteil' && !parts.kleid) || s === 'kleid' || (s === 'unterteil' && !parts.kleid)
 
-  // Optionen, die man hinzufügen kann
   const addable: Slot[] = []
-  if (!parts.jacke && cat('jacke')) addable.push('jacke')
+  if (!parts.jacke && has('jacke')) addable.push('jacke')
   if (!parts.unterschicht && items.some((i) => i.category === 'oberteil' && i.layer !== 'drueber' && i.id !== parts.oberteil))
     addable.push('unterschicht')
-  if (parts.kleid && !parts.unterteil && cat('unterteil')) addable.push('unterteil')
-  if (!parts.kleid && bottom?.bottomType === 'rock' && !parts.unterteilDrunter &&
-      items.some((i) => i.bottomType === 'leggings' || (i.bottomType === 'hose' && i.id !== bottom.id)))
+  if (parts.kleid && !parts.unterteil && has('unterteil')) addable.push('unterteil')
+  if (
+    !parts.kleid &&
+    bottom?.bottomType === 'rock' &&
+    !parts.unterteilDrunter &&
+    items.some((i) => i.bottomType === 'leggings' || (i.bottomType === 'hose' && i.id !== bottom.id))
+  )
     addable.push('unterteilDrunter')
-  if (!parts.schuhe && cat('schuhe')) addable.push('schuhe')
-  if (settings.hijab && !parts.hijab && cat('hijab')) addable.push('hijab')
-  for (const s of ['kette', 'armband', 'ring', 'guertel'] as Slot[]) if (!parts[s] && cat(s as Item['category'])) addable.push(s)
+  if (!parts.schuhe && has('schuhe')) addable.push('schuhe')
+  if (settings.hijab && !parts.hijab && has('hijab')) addable.push('hijab')
+  for (const s of ['kette', 'armband', 'ring', 'guertel'] as Slot[]) if (!parts[s] && has(s as Item['category'])) addable.push(s)
 
-  const tile = (s: Slot, small = false) => {
+  const piece = (s: Slot, i: number, side = false) => {
     const id = parts[s]
     if (!id) return null
     const item = by.get(id)
     return (
-      <div key={s} className={`tile ${small ? 'small' : ''} slot-${s}`}>
-        <ItemImage item={item} className="tile-img" />
-        <div className="tile-label">{slotLabels[s]}</div>
+      <figure key={`${s}-${id}`} className={`piece ${side ? 'side' : ''} slot-${s}`} style={{ '--i': i } as React.CSSProperties}>
+        <ItemImage item={item} className="piece-img" />
+        <figcaption>
+          <span className="piece-slot">{slotLabels[s]}</span>
+          {item?.name && !side && <span className="piece-name">{item.name}</span>}
+        </figcaption>
         {(onReroll || onToggle) && (
-          <div className="tile-actions">
+          <div className="piece-actions">
             {onReroll && (
-              <button className="icon-btn" onClick={() => onReroll(s)} aria-label={`${slotLabels[s]} tauschen`} title="Tauschen">
-                🔄
+              <button className="glass-btn" onClick={() => onReroll(s)} aria-label={`${slotLabels[s]} tauschen`}>
+                <Icon name="refresh" size={side ? 14 : 16} />
               </button>
             )}
             {onToggle && !required(s) && (
-              <button className="icon-btn" onClick={() => onToggle(s)} aria-label={`${slotLabels[s]} entfernen`} title="Weglassen">
-                ✕
+              <button className="glass-btn" onClick={() => onToggle(s)} aria-label={`${slotLabels[s]} weglassen`}>
+                <Icon name="x" size={side ? 14 : 16} />
               </button>
             )}
           </div>
         )}
-      </div>
+      </figure>
     )
   }
 
-  const sideTiles = SIDE_ORDER.map((s) => tile(s, true)).filter(Boolean)
+  const main = MAIN_ORDER.filter((s) => parts[s])
+  const side = SIDE_ORDER.filter((s) => parts[s])
 
   return (
-    <div className="outfit">
-      <div className={`outfit-grid ${sideTiles.length ? '' : 'no-side'}`}>
-        <div className="outfit-main">{MAIN_ORDER.map((s) => tile(s))}</div>
-        {sideTiles.length > 0 && <div className="outfit-side">{sideTiles}</div>}
+    <div className="look" key={outfitKey(parts)}>
+      <div className={`look-stage ${side.length ? '' : 'solo'}`}>
+        <div className="look-main">{main.map((s, i) => piece(s, i))}</div>
+        {side.length > 0 && <div className="look-side">{side.map((s, i) => piece(s, main.length + i, true))}</div>}
       </div>
       {onToggle && addable.length > 0 && (
         <div className="addables">
-          <span className="muted">Dazu nehmen:</span>
+          <span className="eyebrow">Dazu nehmen</span>
           <div className="chips wrap">
             {addable.map((s) => (
-              <button key={s} className="chip small" onClick={() => onToggle(s)}>
-                + {iconFor(s)} {slotLabels[s]}
+              <button key={s} className="chip small ghost-chip" onClick={() => onToggle(s)}>
+                <Icon name="plus" size={14} />
+                <Icon name={slotIcon[s]} size={16} />
+                {slotLabels[s]}
               </button>
             ))}
           </div>
@@ -84,16 +109,13 @@ export function OutfitView({ parts, items, settings, onReroll, onToggle }: Props
   )
 }
 
-const iconFor = (s: Slot) =>
-  s === 'unterschicht' ? '👕' : s === 'unterteilDrunter' ? '🧦' : categoryIcons[(s === 'oberteil' ? 'oberteil' : s) as Item['category']] ?? ''
-
-/** Kleine Collage für die Outfit-Liste */
+/** Kleine Collage für die Look-Liste */
 export function OutfitThumb({ parts, items }: { parts: OutfitParts; items: Item[] }) {
   const by = new Map(items.map((i) => [i.id, i]))
   const order: Slot[] = ['hijab', 'unterschicht', 'oberteil', 'kleid', 'unterteil', 'jacke', 'schuhe']
   const list = order.map((s) => parts[s] && by.get(parts[s]!)).filter(Boolean) as Item[]
   return (
-    <div className="thumb">
+    <div className={`thumb n${Math.min(list.length, 6)}`}>
       {list.slice(0, 6).map((i) => (
         <ItemImage key={i.id} item={i} />
       ))}

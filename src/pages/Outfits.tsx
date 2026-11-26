@@ -4,6 +4,7 @@ import { isAllowed, learn } from '../engine'
 import { ItemImage } from '../components/ItemImage'
 import { OutfitThumb, OutfitView } from '../components/OutfitView'
 import { slotCategory, slotLabels } from '../labels'
+import { Icon } from '../components/Icon'
 import { useStore } from '../store'
 import type { Outfit, OutfitParts, Slot, Template } from '../types'
 
@@ -21,9 +22,10 @@ export function Outfits() {
     return (
       <div className="page">
         <header className="page-head">
-          <button className="btn ghost" onClick={() => setOpen(null)}>← Zurück</button>
+          <button className="btn ghost" onClick={() => setOpen(null)}><Icon name="back" size={18} /> Looks</button>
         </header>
-        <section className="card">
+        <section className="look-card">
+          {open.name && <h2 className="look-title">{open.name}</h2>}
           <OutfitView parts={open.parts} items={items} settings={settings} />
           {open.wornDates.length > 0 && (
             <p className="muted small">Getragen: {open.wornDates.slice(-5).map(fmt).join(', ')}</p>
@@ -43,19 +45,19 @@ export function Outfits() {
                 setOpen(o)
               }}
             >
-              ✅ Heute anziehen
+              <Icon name="check" size={18} /> Heute anziehen
             </button>
             {open.saved ? (
               <button className="btn" onClick={async () => { await saveOutfit({ ...open, saved: false }); setOpen(null) }}>
-                💔 Entfernen
+                <Icon name="heartFill" size={18} /> Gespeichert
               </button>
             ) : (
               <button className="btn" onClick={async () => { const o = { ...open, saved: true }; await saveOutfit(o); setOpen(o) }}>
-                ❤️ Speichern
+                <Icon name="heart" size={18} /> Speichern
               </button>
             )}
-            <button className="btn danger" onClick={async () => { if (confirm('Outfit löschen?')) { await removeOutfit(open.id); setOpen(null) } }}>
-              🗑️
+            <button className="btn round danger" aria-label="Look löschen" onClick={async () => { if (confirm('Outfit löschen?')) { await removeOutfit(open.id); setOpen(null) } }}>
+              <Icon name="trash" size={18} />
             </button>
           </div>
         </section>
@@ -70,17 +72,20 @@ export function Outfits() {
   return (
     <div className="page">
       <header className="page-head">
-        <h2>Outfits</h2>
-        <button className="btn small" onClick={() => setBuilding(true)}>＋ Selbst erstellen</button>
+        <div>
+          <p className="eyebrow">Deine Sammlung</p>
+          <h1 className="display">Looks</h1>
+        </div>
+        <button className="btn small" onClick={() => setBuilding(true)}><Icon name="plus" size={16} /> Selbst</button>
       </header>
       <div className="seg">
-        <button className={tab === 'saved' ? 'on' : ''} onClick={() => setTab('saved')}>❤️ Gespeichert</button>
-        <button className={tab === 'history' ? 'on' : ''} onClick={() => setTab('history')}>📅 Getragen</button>
+        <button className={tab === 'saved' ? 'on' : ''} onClick={() => setTab('saved')}>Gespeichert</button>
+        <button className={tab === 'history' ? 'on' : ''} onClick={() => setTab('history')}>Getragen</button>
       </div>
       {list.length === 0 ? (
         <section className="card empty">
           <p className="muted">
-            {tab === 'saved' ? 'Noch keine gespeicherten Outfits. Tippe bei einem Vorschlag auf ❤️.' : 'Hier erscheinen Outfits, die du angezogen hast.'}
+            {tab === 'saved' ? 'Noch keine gespeicherten Looks. Tippe bei einem Vorschlag auf das Herz.' : 'Hier erscheinen Looks, die du angezogen hast.'}
           </p>
         </section>
       ) : (
@@ -121,8 +126,10 @@ function Builder({ onClose }: { onClose: () => void }) {
   return (
     <div className="page">
       <header className="page-head">
-        <button className="btn ghost" onClick={onClose}>← Zurück</button>
-        <h2>Eigenes Outfit</h2>
+        <button className="btn ghost" onClick={onClose}><Icon name="back" size={18} /> Looks</button>
+      </header>
+      <header className="page-head">
+        <h1 className="display">Eigener <em>Look</em></h1>
       </header>
       <p className="muted">Wähle für jede Schicht ein Teil – oder lass sie leer.</p>
       {slots.map((s) => {
@@ -136,7 +143,7 @@ function Builder({ onClose }: { onClose: () => void }) {
               </button>
               {opts.map((i) => (
                 <button key={i.id} className={`pick ${parts[s] === i.id ? 'on' : ''}`} onClick={() => setParts((p) => ({ ...p, [s]: i.id }))}>
-                  <ItemImage item={i} className="checker" />
+                  <ItemImage item={i} />
                 </button>
               ))}
             </div>
@@ -158,7 +165,7 @@ function Builder({ onClose }: { onClose: () => void }) {
             onClose()
           }}
         >
-          ❤️ Outfit speichern
+          <Icon name="heart" size={18} /> Look speichern
         </button>
       </div>
       {!valid && <p className="muted small">Mindestens Oberteil + Unterteil oder ein Kleid auswählen.</p>}

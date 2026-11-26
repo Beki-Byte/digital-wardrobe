@@ -3,7 +3,6 @@ import { uid } from '../db'
 import { canvasToBlob, colorName, dominantColor, loadImage, palette, removeBackground, toCanvas } from '../image'
 import {
   bottomLabels,
-  categoryIcons,
   categoryLabels,
   layerLabels,
   lengthLabels,
@@ -14,6 +13,7 @@ import {
 import { useStore } from '../store'
 import type { BottomType, Category, Item, LayerRole, Length, Sleeves } from '../types'
 import { blobUrl } from './ItemImage'
+import { Icon } from './Icon'
 
 const warmthDefaults: Record<Category, number> = {
   oberteil: 2, unterteil: 3, kleid: 2, jacke: 4, schuhe: 3, hijab: 1,
@@ -115,16 +115,17 @@ export function ItemForm({ existing, onDone }: Props) {
           <img src={preview} alt="Vorschau" className="photo-preview checker" />
         ) : (
           <div className="photo-empty">
-            <div className="big-icon">📸</div>
-            <p>Leg das Teil am besten auf einen <b>einfarbigen Untergrund</b> (Bett, Boden, Wand) – dann klappt das Freistellen am besten.</p>
+            <div className="photo-empty-icon"><Icon name="camera" size={34} stroke={1.3} /></div>
+            <p className="photo-empty-title">Fotografiere ein Teil</p>
+            <p className="muted small">Am besten flach auf einem <b>einfarbigen Untergrund</b> – Bett, Boden oder Wand. Dann wird es sauber freigestellt.</p>
           </div>
         )}
         <div className="row gap">
           <button className="btn primary" onClick={() => camRef.current?.click()} disabled={busy}>
-            📷 Foto machen
+            <Icon name="camera" size={18} /> Foto machen
           </button>
           <button className="btn" onClick={() => fileRef.current?.click()} disabled={busy}>
-            🖼️ Aus Galerie
+            <Icon name="image" size={18} /> Galerie
           </button>
         </div>
         <input ref={camRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => onFile(e.target.files?.[0])} />
@@ -147,18 +148,19 @@ export function ItemForm({ existing, onDone }: Props) {
 
       {hasImage && (
         <>
-          <h3>Was ist das?</h3>
-          <div className="chips wrap">
+          <h3 className="form-title">Was ist das?</h3>
+          <div className="cat-grid">
             {cats.map((c) => (
               <button
                 key={c}
-                className={`chip ${category === c ? 'on' : ''}`}
+                className={`cat ${category === c ? 'on' : ''}`}
                 onClick={() => {
                   setCategory(c)
                   if (!existing) setWarmth(warmthDefaults[c])
                 }}
               >
-                {categoryIcons[c]} {categoryLabels[c]}
+                <Icon name={c} size={26} stroke={1.4} />
+                <span>{categoryLabels[c]}</span>
               </button>
             ))}
           </div>
@@ -217,7 +219,7 @@ export function ItemForm({ existing, onDone }: Props) {
               <div className="warmth">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button key={n} className={`chip ${warmth === n ? 'on' : ''}`} onClick={() => setWarmth(n)}>
-                    {n === 1 ? '☀️' : n === 5 ? '❄️' : n}
+                    {n === 1 ? <Icon name="sun" size={18} /> : n === 5 ? <Icon name="snow" size={18} /> : n}
                   </button>
                 ))}
               </div>

@@ -18,6 +18,7 @@ import type { DayWeather, Outfit, Slot } from '../types'
 import { fetchWeather } from '../weather'
 import { LocationPicker } from '../components/LocationPicker'
 import { OutfitView } from '../components/OutfitView'
+import { Icon, weatherIcon } from '../components/Icon'
 
 const dateKey = (offset: number) => {
   const d = new Date(Date.now() + offset * 86400000)
@@ -121,10 +122,10 @@ export function Today({ goAdd }: { goAdd: () => void }) {
   async function saveFav() {
     if (!current) return
     const ex = findSaved(current)
-    if (ex?.saved) return flash('Schon gespeichert ❤️')
+    if (ex?.saved) return flash('Schon gespeichert')
     await saveOutfit(ex ? { ...ex, saved: true } : { id: uid(), parts: current.parts, template: current.template, createdAt: Date.now(), saved: true, wornDates: [] })
     await setPrefs(learn(prefs, current, items, 1.5))
-    flash('Gespeichert ❤️ – die App merkt sich deinen Stil')
+    flash('Gespeichert – die App merkt sich deinen Stil')
   }
 
   async function wear() {
@@ -141,7 +142,7 @@ export function Today({ goAdd }: { goAdd: () => void }) {
       if (it) await saveItem({ ...it, lastWorn: when, wornCount: it.wornCount + 1 })
     }
     await setPrefs(learn(prefs, current, items, 1))
-    flash(offset === 0 ? 'Viel Spaß heute! ✨' : 'Für morgen eingeplant ✨')
+    flash(offset === 0 ? 'Viel Spaß heute!' : 'Für morgen eingeplant')
   }
 
   async function reroll(slot: Slot) {
@@ -158,62 +159,68 @@ export function Today({ goAdd }: { goAdd: () => void }) {
     update(next)
   }
 
-  const wt = weather ? weatherText(weather.code) : null
   const tips = weather && current ? weatherTips(current.parts, items, weather) : []
+  const day = new Date(Date.now() + offset * 86400000).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'short' })
 
   return (
     <div className="page">
-      <header className="page-head">
-        <div className="seg">
-          <button className={offset === 0 ? 'on' : ''} onClick={() => setOffset(0)}>Heute</button>
-          <button className={offset === 1 ? 'on' : ''} onClick={() => setOffset(1)}>Morgen</button>
+      <header className="hero-head">
+        <div className="hero-top">
+          <p className="eyebrow">{day}</p>
+          <div className="seg compact" role="tablist">
+            <button className={offset === 0 ? 'on' : ''} onClick={() => setOffset(0)}>Heute</button>
+            <button className={offset === 1 ? 'on' : ''} onClick={() => setOffset(1)}>Morgen</button>
+          </div>
         </div>
+        <h1 className="display">
+          Dein Look <em>{offset === 0 ? 'für heute' : 'für morgen'}</em>
+        </h1>
       </header>
 
-      {/* Wetter */}
       {!loc ? (
         <section className="card">
-          <h3>🌦️ Wo bist du?</h3>
-          <p className="muted">Damit die Outfits zum Wetter passen. Der Ort bleibt auf deinem Gerät.</p>
+          <h3>Wo bist du unterwegs?</h3>
+          <p className="muted small">Damit dein Look zum Wetter passt – vom Morgen bis zum Nachmittag. Der Ort bleibt auf deinem Gerät.</p>
           <LocationPicker />
         </section>
       ) : weather ? (
         <section className="card weather">
-          <div className="w-main">
-            <span className="w-icon">{wt!.icon}</span>
-            <div>
-              <div className="w-range">
-                <span className="cold">{weather.min}°</span>
-                <span className="arrow">→</span>
-                <span className="warm">{weather.max}°</span>
-              </div>
-              <div className="muted small">
-                {wt!.text} · {settings.dayStart}–{settings.dayEnd} Uhr · {loc.name}
-                {weather.rainProb >= 30 && ` · ☔ ${weather.rainProb} %`}
-              </div>
+          <div className="w-top">
+            <div className="w-icon"><Icon name={weatherIcon(weather.code)} size={30} stroke={1.4} /></div>
+            <div className="w-range">
+              <span className="cold">{weather.min}°</span>
+              <span className="w-dash" />
+              <span className="warm">{weather.max}°</span>
             </div>
           </div>
-          <TempBar w={weather} />
+          <p className="muted small w-meta">
+            {weatherText(weather.code)} · {settings.dayStart}–{settings.dayEnd} Uhr · {loc.name}
+            {weather.rainProb >= 30 && (
+              <>
+                {' · '}<Icon name="umbrella" size={13} /> {weather.rainProb} %
+              </>
+            )}
+          </p>
+          <TempCurve w={weather} />
         </section>
       ) : wErr ? (
-        <section className="card"><p className="muted">⚠️ {wErr}. Vorschläge kommen trotzdem – nur ohne Wetter.</p></section>
+        <section className="card"><p className="muted small">{wErr}. Vorschläge kommen trotzdem – nur ohne Wetter.</p></section>
       ) : (
-        <section className="card"><p className="muted">Wetter wird geladen …</p></section>
+        <section className="card weather skeleton" aria-label="Wetter wird geladen" />
       )}
 
-      {/* Outfit */}
       {!canSuggest ? (
         <section className="card empty">
-          <div className="big-icon">👗</div>
+          <div className="empty-art"><Icon name="wardrobe" size={44} stroke={1.2} /></div>
           <h3>Dein Schrank ist noch leer</h3>
-          <p className="muted">
-            Scanne mindestens <b>ein Oberteil und ein Unterteil</b> oder <b>ein Kleid</b> – dann bekommst du dein erstes Outfit.
-            Je mehr Sachen, desto besser die Vorschläge.
+          <p className="muted small">
+            Scanne mindestens <b>ein Oberteil und ein Unterteil</b> oder <b>ein Kleid</b> – dann bekommst du deinen ersten Look.
+            Je mehr Teile, desto besser die Vorschläge.
           </p>
-          <button className="btn primary" onClick={goAdd}>📸 Erstes Teil scannen</button>
+          <button className="btn primary" onClick={goAdd}><Icon name="camera" size={18} /> Erstes Teil scannen</button>
         </section>
       ) : current ? (
-        <section className="card">
+        <section className="look-card">
           <OutfitView parts={current.parts} items={items} settings={settings} onReroll={reroll} onToggle={toggle} />
           {tips.length > 0 && (
             <ul className="tips">
@@ -221,35 +228,59 @@ export function Today({ goAdd }: { goAdd: () => void }) {
             </ul>
           )}
           <div className="actions">
-            <button className="btn" onClick={dislike} title="Gefällt mir nicht – neues Outfit">👎 Anderes</button>
-            <button className="btn" onClick={saveFav}>❤️ Speichern</button>
-            <button className="btn primary" onClick={wear}>✅ {offset === 0 ? 'Anziehen' : 'Einplanen'}</button>
+            <button className="btn round" onClick={dislike} aria-label="Gefällt mir nicht – anderer Look"><Icon name="dislike" size={20} /></button>
+            <button className="btn round" onClick={saveFav} aria-label="Look speichern"><Icon name="heart" size={20} /></button>
+            <button className="btn primary grow" onClick={wear}><Icon name="check" size={18} /> {offset === 0 ? 'Anziehen' : 'Für morgen einplanen'}</button>
           </div>
         </section>
       ) : (
-        <section className="card"><p className="muted">Kein passendes Outfit gefunden. Füge mehr Sachen hinzu oder ändere die Einstellungen.</p></section>
+        <section className="card"><p className="muted small">Kein passender Look gefunden. Füge mehr Teile hinzu oder ändere die Einstellungen.</p></section>
       )}
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   )
 }
 
-function TempBar({ w }: { w: DayWeather }) {
-  const lo = Math.min(...w.hours.map((h) => h.temp)), hi = Math.max(...w.hours.map((h) => h.temp))
-  const span = Math.max(1, hi - lo)
+/** Temperaturkurve über den Tag */
+function TempCurve({ w }: { w: DayWeather }) {
+  const hs = w.hours
+  const lo = Math.min(...hs.map((h) => h.temp)) - 1, hi = Math.max(...hs.map((h) => h.temp)) + 1
+  const W = 320, H = 70, pad = 10
+  const x = (i: number) => pad + (i / Math.max(1, hs.length - 1)) * (W - pad * 2)
+  const y = (t: number) => H - 14 - ((t - lo) / Math.max(1, hi - lo)) * (H - 30)
+  const pts = hs.map((h, i) => [x(i), y(h.temp)] as const)
+  const d = pts.map(([px, py], i) => {
+    if (i === 0) return `M${px},${py}`
+    const [qx, qy] = pts[i - 1]
+    const cx = (qx + px) / 2
+    return `C${cx},${qy} ${cx},${py} ${px},${py}`
+  }).join(' ')
+  const minI = hs.findIndex((h) => h.hour === w.minHour), maxI = hs.findIndex((h) => h.hour === w.maxHour)
+  const step = Math.ceil(hs.length / 6)
   return (
-    <div className="tempbar" aria-label="Temperatur im Tagesverlauf">
-      {w.hours.map((h) => (
-        <div key={h.hour} className="tb-col">
-          <div className="tb-val">{h.temp}°</div>
-          <div className="tb-bar" style={{ height: `${18 + ((h.temp - lo) / span) * 42}px`, background: tempColor(h.temp) }} />
-          <div className="tb-hour">{h.hour}</div>
-        </div>
+    <svg className="curve" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Temperatur von ${w.min}° bis ${w.max}°`}>
+      <defs>
+        <linearGradient id="tc" x1="0" x2="0" y1="1" y2="0">
+          <stop offset="0" stopColor="var(--cold)" />
+          <stop offset="1" stopColor="var(--warm)" />
+        </linearGradient>
+        <linearGradient id="tcf" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" stopColor="var(--warm)" stopOpacity=".18" />
+          <stop offset="1" stopColor="var(--cold)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${d} L${x(hs.length - 1)},${H - 14} L${x(0)},${H - 14} Z`} fill="url(#tcf)" />
+      <path d={d} fill="none" stroke="url(#tc)" strokeWidth="2.5" strokeLinecap="round" className="curve-line" />
+      {[minI, maxI].filter((i) => i >= 0).map((i) => (
+        <g key={i}>
+          <circle cx={pts[i][0]} cy={pts[i][1]} r="4" fill="var(--card)" stroke={i === minI ? 'var(--cold)' : 'var(--warm)'} strokeWidth="2" />
+          <text x={pts[i][0]} y={pts[i][1] - 8} textAnchor="middle" className="curve-val">{hs[i].temp}°</text>
+        </g>
       ))}
-    </div>
+      {hs.map((h, i) => (i % step === 0 || i === hs.length - 1) && (
+        <text key={h.hour} x={x(i)} y={H - 1} textAnchor="middle" className="curve-hour">{h.hour}</text>
+      ))}
+    </svg>
   )
 }
-
-const tempColor = (t: number) =>
-  t <= 0 ? '#6aa5e0' : t <= 8 ? '#8cc0d8' : t <= 15 ? '#9fcfa8' : t <= 22 ? '#f2c96b' : '#f0935f'

@@ -1,5 +1,9 @@
 name: Deploy auf GitHub Pages
 
+# Baut die App (Branch main) und – falls vorhanden – die Startseite
+# (Branch startseite) und veröffentlicht beides zusammen:
+#   /            → App
+#   /start/      → 3D-Startseite
 on:
   push:
     branches: [main]
@@ -25,6 +29,23 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+
+      - name: Startseite auschecken (Branch startseite)
+        id: start
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: startseite
+          path: _startseite
+      - name: Startseite bauen
+        if: steps.start.outcome == 'success'
+        working-directory: _startseite
+        run: |
+          npm ci
+          npm run build
+          mkdir -p ../dist/start
+          cp -r dist/. ../dist/start/
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

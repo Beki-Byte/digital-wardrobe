@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { ItemForm } from '../components/ItemForm'
 import { ItemImage } from '../components/ItemImage'
-import { categoryIcons, categoryLabels } from '../labels'
+import { categoryLabels } from '../labels'
+import { Icon } from '../components/Icon'
 import { useStore } from '../store'
 import type { Category, Item } from '../types'
 
@@ -14,8 +15,7 @@ export function Wardrobe({ goAdd }: { goAdd: () => void }) {
     return (
       <div className="page">
         <header className="page-head">
-          <button className="btn ghost" onClick={() => setEdit(null)}>← Zurück</button>
-          <h2>Bearbeiten</h2>
+          <button className="btn ghost" onClick={() => setEdit(null)}><Icon name="back" size={18} /> Schrank</button>
         </header>
         <ItemForm existing={edit} onDone={() => setEdit(null)} />
       </div>
@@ -29,33 +29,35 @@ export function Wardrobe({ goAdd }: { goAdd: () => void }) {
   return (
     <div className="page">
       <header className="page-head">
-        <h2>Mein Schrank</h2>
-        <span className="muted">{items.length} Teile</span>
+        <div>
+          <p className="eyebrow">{items.length} {items.length === 1 ? 'Teil' : 'Teile'}</p>
+          <h1 className="display">Mein <em>Schrank</em></h1>
+        </div>
       </header>
       {cats.length > 1 && (
         <div className="chips scroll">
           <button className={`chip ${filter === 'alle' ? 'on' : ''}`} onClick={() => setFilter('alle')}>Alle</button>
           {cats.map((c) => (
             <button key={c} className={`chip ${filter === c ? 'on' : ''}`} onClick={() => setFilter(c)}>
-              {categoryIcons[c]} {categoryLabels[c]}
+              <Icon name={c} size={16} /> {categoryLabels[c]}
             </button>
           ))}
         </div>
       )}
       {shown.length === 0 ? (
         <section className="card empty">
-          <div className="big-icon">🧺</div>
+          <div className="empty-art"><Icon name="wardrobe" size={44} stroke={1.2} /></div>
           <p className="muted">Noch nichts hier.</p>
-          <button className="btn primary" onClick={goAdd}>📸 Teil hinzufügen</button>
+          <button className="btn primary" onClick={goAdd}><Icon name="camera" size={18} /> Teil scannen</button>
         </section>
       ) : (
         <div className="grid">
           {shown.map((i) => (
             <button key={i.id} className="grid-item" onClick={() => setEdit(i)}>
-              <ItemImage item={i} className="checker" />
+              <span className="grid-img"><ItemImage item={i} /></span>
               <span className="grid-label">
                 <span className="dot" style={{ background: i.color }} />
-                {i.name || categoryLabels[i.category]}
+                <span className="ellipsis">{i.name || categoryLabels[i.category]}</span>
               </span>
             </button>
           ))}

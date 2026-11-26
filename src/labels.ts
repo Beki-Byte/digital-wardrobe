@@ -13,19 +13,6 @@ export const categoryLabels: Record<Category, string> = {
   guertel: 'Gürtel',
 }
 
-export const categoryIcons: Record<Category, string> = {
-  oberteil: '👚',
-  unterteil: '👖',
-  kleid: '👗',
-  jacke: '🧥',
-  schuhe: '👟',
-  hijab: '🧕',
-  ring: '💍',
-  armband: '📿',
-  kette: '🔗',
-  guertel: '🪢',
-}
-
 export const slotLabels: Record<Slot, string> = {
   unterschicht: 'Drunter',
   oberteil: 'Oberteil',
@@ -74,15 +61,15 @@ export const warmthLabels = ['', 'Sehr leicht', 'Leicht', 'Mittel', 'Warm', 'Seh
 
 export const styleTags = ['casual', 'schick', 'sportlich', 'elegant', 'gemütlich', 'Schule', 'Party']
 
-export const weatherText = (code: number): { text: string; icon: string } => {
-  if (code === 0) return { text: 'Klar', icon: '☀️' }
-  if (code <= 2) return { text: 'Leicht bewölkt', icon: '🌤️' }
-  if (code === 3) return { text: 'Bewölkt', icon: '☁️' }
-  if (code <= 48) return { text: 'Nebel', icon: '🌫️' }
-  if (code <= 57) return { text: 'Nieselregen', icon: '🌦️' }
-  if (code <= 67) return { text: 'Regen', icon: '🌧️' }
-  if (code <= 77) return { text: 'Schnee', icon: '🌨️' }
-  if (code <= 82) return { text: 'Regenschauer', icon: '🌦️' }
-  if (code <= 86) return { text: 'Schneeschauer', icon: '🌨️' }
-  return { text: 'Gewitter', icon: '⛈️' }
+export const weatherText = (code: number): string => {
+  if (code === 0) return 'Klar'
+  if (code <= 2) return 'Leicht bewölkt'
+  if (code === 3) return 'Bewölkt'
+  if (code <= 48) return 'Nebel'
+  if (code <= 57) return 'Nieselregen'
+  if (code <= 67) return 'Regen'
+  if (code <= 77) return 'Schnee'
+  if (code <= 82) return 'Regenschauer'
+  if (code <= 86) return 'Schneeschauer'
+  return 'Gewitter'
 }

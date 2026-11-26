@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ItemForm } from '../components/ItemForm'
 import { categoryLabels } from '../labels'
+import { Icon } from '../components/Icon'
 
 export function AddItem({ goWardrobe }: { goWardrobe: () => void }) {
   const [key, setKey] = useState(0)
@@ -8,12 +9,15 @@ export function AddItem({ goWardrobe }: { goWardrobe: () => void }) {
   return (
     <div className="page">
       <header className="page-head">
-        <h2>Teil scannen</h2>
+        <div>
+          <p className="eyebrow">Neues Teil</p>
+          <h1 className="display">Scannen</h1>
+        </div>
       </header>
       {last && (
         <div className="card success">
-          ✅ {last} gespeichert.
-          <button className="btn ghost small" onClick={goWardrobe}>Zum Schrank →</button>
+          <span><Icon name="check" size={18} /> {last} ist im Schrank.</span>
+          <button className="btn ghost small" onClick={goWardrobe}>Ansehen <Icon name="arrow" size={16} /></button>
         </div>
       )}
       <ItemForm

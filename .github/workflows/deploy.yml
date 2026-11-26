@@ -4,6 +4,7 @@ name: Deploy auf GitHub Pages
 # (Branch startseite) und veröffentlicht beides zusammen:
 #   /            → App
 #   /start/      → 3D-Startseite
+#   /neu/        → neue App zum Ausprobieren (Branch app-neu)
 on:
   push:
     branches: [main]
@@ -45,6 +46,22 @@ jobs:
           npm run build
           mkdir -p ../dist/start
           cp -r dist/. ../dist/start/
+
+      - name: Neue App auschecken (Branch app-neu)
+        id: neu
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: app-neu
+          path: _app-neu
+      - name: Neue App bauen
+        if: steps.neu.outcome == 'success'
+        working-directory: _app-neu
+        run: |
+          npm ci
+          npm run build
+          mkdir -p ../dist/neu
+          cp -r dist/. ../dist/neu/
 
       - uses: actions/upload-pages-artifact@v3
         with:

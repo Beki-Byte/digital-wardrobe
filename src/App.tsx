@@ -19,6 +19,8 @@ const tabs: { id: Tab; icon: IconName; label: string }[] = [
 ]
 
 const INTRO_KEY = 'kleiderschrank:intro'
+// Adresse beim Start merken, bevor die App #heute setzt
+const startedWithHash = !!location.hash
 
 export default function App() {
   const { ready, items } = useStore()
@@ -38,7 +40,7 @@ export default function App() {
     } catch {
       /* privat-Modus */
     }
-    if (seen || location.hash) return
+    if (seen || startedWithHash) return
     fetch('./start/', { method: 'HEAD' })
       .then((r) => r.ok && location.replace('./start/'))
       .catch(() => {})
